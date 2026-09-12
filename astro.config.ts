@@ -21,6 +21,9 @@ import config from "./astro-paper.config";
 
 export default defineConfig({
   site: config.site.url,
+  // 部署在子路径时（例如 GitHub Pages 项目页 /repo/）由 SITE_BASE 注入；
+  // 部署在根路径（自有域名、或 <user>.github.io 用户页）时留空。
+  base: process.env.SITE_BASE || undefined,
   integrations: [
     mdx(),
     sitemap({

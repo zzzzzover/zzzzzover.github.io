@@ -16,6 +16,27 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DIST = join(ROOT, "dist");
 const rel = p => p.slice(ROOT.length + 1);
 
+/**
+ * 读取 astro.config.ts 的 base 前缀。
+ * 部署在子路径下时（例如 GitHub Pages 的项目页 /repo/），产物里的链接都带这个前缀，
+ * 但文件仍输出到 dist/ 根，因此比对时必须先剥掉它。
+ */
+function readBase() {
+  // 与 astro.config.ts 一致：优先取环境变量
+  if (process.env.SITE_BASE !== undefined) {
+    return process.env.SITE_BASE.replace(/\/+$/, "");
+  }
+  // 回退：base 被直接写死在配置里的情况
+  try {
+    const cfg = readFileSync(join(ROOT, "astro.config.ts"), "utf8");
+    const m = /base:\s*["']([^"']+)["']/.exec(cfg);
+    return m ? m[1].replace(/\/+$/, "") : "";
+  } catch {
+    return "";
+  }
+}
+const BASE = readBase();
+
 if (!existsSync(DIST)) {
   console.error("✗ 未找到 dist/，请先执行构建");
   process.exit(1);
@@ -57,8 +78,11 @@ for (const file of walk(DIST)) {
     const url = raw.trim();
     if (!url || IGNORE_PREFIX.some(p => url.startsWith(p))) continue;
     if (!url.startsWith("/")) continue; // 只检查根相对路径，避免噪声
+    // 带 base 部署时，站内链接都带前缀；先剥离再比对文件系统
+    if (BASE && !url.startsWith(BASE)) continue;
+    const withoutBase = BASE ? url.slice(BASE.length) : url;
     checked++;
-    if (resolveInternal(url) === null) {
+    if (resolveInternal(withoutBase) === null) {
       problems.push(`${rel(file)}  →  ${url}`);
     }
   }
@@ -72,4 +96,4 @@ if (problems.length > 0) {
   process.exit(1);
 }
 
-console.log(`✓ 链接检查通过：${checked} 个站内链接全部可达`);
+console.log(`✓ 链接检查通过：${checked} 个站内链接全部可达${BASE ? `（base=${BASE}）` : ""}`);

@@ -7,8 +7,9 @@ import { defineAstroPaperConfig } from "./src/types/config";
  */
 export default defineAstroPaperConfig({
   site: {
-    // 【待填】域名购买并解析后替换，必须以 / 结尾
-    url: "https://example.com/",
+    // 【待填】域名购买并解析后替换，必须以 / 结尾。
+    // 支持用 SITE_URL 覆盖，便于同一份代码部署到不同托管（见 deploy/README.md）。
+    url: process.env.SITE_URL || "https://example.com/",
     // 【待填】站点名称
     title: "站点名称待填",
     // 【待填】站点描述，会出现在分享卡片上

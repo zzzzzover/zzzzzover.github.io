@@ -1,0 +1,73 @@
+name: 部署到 GitHub Pages
+
+# 用途：在没有自有域名/服务器时先把站点跑起来，同时它也是将来「海外线路」的一半
+# （见 specs/001-portfolio-blog/contracts/site-contract.md 与 deploy/README.md）。
+#
+# 注意：GitHub Pages 面向国内访客**不稳定**，它不能满足国内读者的可达性要求。
+# 正式面向国内请仍然走香港/新加坡节点。
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      # configure-pages 会算出本仓库在 Pages 上的实际地址：
+      #   用户页（<user>.github.io）→ base_path 为空
+      #   项目页（<user>.github.io/<repo>）→ base_path 为 /<repo>
+      # 两个值注入构建，使同一份代码无需改动即可部署到任意位置。
+      - uses: actions/configure-pages@v5
+        id: pages
+
+      - name: 构建
+        env:
+          # SITE_URL 必须以 / 结尾（astro-paper.config.ts 的约定）
+          SITE_URL: ${{ steps.pages.outputs.base_url }}/
+          SITE_BASE: ${{ steps.pages.outputs.base_path }}
+        run: pnpm build
+
+      - name: 站内链接检查
+        env:
+          SITE_BASE: ${{ steps.pages.outputs.base_path }}
+        run: node scripts/check-links.mjs
+
+      - name: 体积预算检查
+        run: node scripts/check-budget.mjs
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
