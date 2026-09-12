@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+#
+# 服务端裸仓库的 post-receive 钩子。
+#
+# 职责：把推送上来的提交变成线上可见的站点，全程不需要站主执行任何部署命令（FR-019）。
+#
+# 安装位置：/srv/blog/repo.git/hooks/post-receive，并 chmod +x
+#
+# 关键性质：**构建失败绝不切换服务目录**。
+# site-contract.md 规定访客不能看到半成品；配合"失败不切换"，
+# 失败的表现是"线上仍是上一版"，而不是"站点坏了"。
+
+set -euo pipefail
+
+# ── 配置 ────────────────────────────────────────────────────────────────
+REPO_DIR="/srv/blog/repo.git"
+WORK_DIR="/srv/blog/work"
+RELEASES_DIR="/srv/blog/releases"
+CURRENT_LINK="/srv/blog/current"
+KEEP_RELEASES=5
+BRANCH="main"
+# 构建期需要 Node ≥ 22.12；若用 nvm 安装，这里指向其 bin 目录
+NODE_BIN_DIR="${NODE_BIN_DIR:-/usr/bin}"
+
+export PATH="${NODE_BIN_DIR}:${PATH}"
+export ASTRO_TELEMETRY_DISABLED=1
+
+log() { printf '[deploy] %s\n' "$*"; }
+fail() { printf '[deploy] ✗ %s\n' "$*" >&2; exit 1; }
+
+# 钩子从 stdin 读取 pushed refs；只关心目标分支
+while read -r _oldrev _newrev ref; do
+	[ "${ref}" = "refs/heads/${BRANCH}" ] || continue
+	log "收到 ${ref} 的推送，开始发布"
+done
+
+# ── 1. 取最新代码 ───────────────────────────────────────────────────────
+mkdir -p "${WORK_DIR}" "${RELEASES_DIR}"
+
+if [ ! -d "${WORK_DIR}/.git" ]; then
+	log "初始化工作区"
+	git clone --branch "${BRANCH}" "${REPO_DIR}" "${WORK_DIR}"
+else
+	git -C "${WORK_DIR}" fetch origin "${BRANCH}"
+	git -C "${WORK_DIR}" reset --hard "origin/${BRANCH}"
+	git -C "${WORK_DIR}" clean -fdx -e node_modules
+fi
+
+cd "${WORK_DIR}"
+
+# ── 2. 安装依赖 ─────────────────────────────────────────────────────────
+command -v pnpm >/dev/null 2>&1 || fail "未找到 pnpm，请先在服务器上安装"
+log "安装依赖"
+pnpm install --frozen-lockfile
+
+# ── 3. 构建 ─────────────────────────────────────────────────────────────
+log "构建（含内容 schema 校验与分享图字体覆盖检查）"
+pnpm build
+
+# ── 4. 发布前检查 ───────────────────────────────────────────────────────
+log "检查站内链接与体积预算"
+node scripts/check-links.mjs
+node scripts/check-budget.mjs
+
+# ── 5. 原子发布 ─────────────────────────────────────────────────────────
+TIMESTAMP="$(date -u +%Y%m%dT%H%M%S)"
+NEW_RELEASE="${RELEASES_DIR}/${TIMESTAMP}"
+
+log "写入新发布目录 ${NEW_RELEASE}"
+mkdir -p "${NEW_RELEASE}"
+# 先写临时目录再改名，避免出现被读到的半成品目录
+cp -a dist/. "${NEW_RELEASE}.tmp"
+mv "${NEW_RELEASE}.tmp" "${NEW_RELEASE}"
+
+log "切换服务目录"
+# ln -sfn 配合 mv 保证切换是原子替换，不会出现链接短暂消失
+ln -sfn "${NEW_RELEASE}" "${CURRENT_LINK}.new"
+mv -T "${CURRENT_LINK}.new" "${CURRENT_LINK}"
+
+# ── 6. 清理旧发布（保留回滚点）────────────────────────────────────────
+# 目录名是 UTC 时间戳（纯字母数字），ls 在此安全；用 ls 是因为要按 mtime 排序。
+# shellcheck disable=SC2012
+mapfile -t OLD < <(ls -1dt "${RELEASES_DIR}"/*/ 2>/dev/null | tail -n +$((KEEP_RELEASES + 1)) || true)
+if [ "${#OLD[@]}" -gt 0 ]; then
+	log "清理 ${#OLD[@]} 个旧发布目录"
+	rm -rf "${OLD[@]}"
+fi
+
+log "✓ 发布完成：${NEW_RELEASE}"

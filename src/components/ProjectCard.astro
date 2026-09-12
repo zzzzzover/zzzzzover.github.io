@@ -1,0 +1,62 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { getProjectUrl } from "@/utils/projectPaths";
+
+/**
+ * 项目列表卡片。展示规格 FR-007 要求的四项：名称、一句话说明、技术要点、当前状态。
+ *
+ * 卡片不渲染封面：FR-007 未要求，且可以彻底避免「路径写错导致破图」这一类问题。
+ * `cover` 供详情页与分享卡片使用。
+ */
+type Props = {
+  variant?: "h2" | "h3";
+} & CollectionEntry<"projects">;
+
+const { variant: Heading = "h3", id, data } = Astro.props;
+const { title, summary, tech, status, order } = data;
+
+const href = getProjectUrl(id);
+const isArchived = status === "已归档";
+---
+
+<li
+  class="border-border my-8 border-b pb-6 last:border-b-0"
+  data-order={order ?? 0}
+>
+  <a
+    href={href}
+    class="text-accent focus-visible:no-underline inline-block decoration-dashed underline-offset-4 hover:underline"
+  >
+    <Heading
+      class:list={[
+        "text-xl font-medium",
+        { "opacity-70": isArchived },
+      ]}
+    >
+      {title}
+    </Heading>
+  </a>
+
+  <p class="text-muted-foreground mt-1">{summary}</p>
+
+  <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+    <span
+      class:list={[
+        "border-border rounded-sm border px-2 py-0.5 whitespace-nowrap",
+        { "text-accent": status === "运行中" },
+        { "text-muted-foreground": status !== "运行中" },
+      ]}
+    >
+      {status}
+    </span>
+    <ul class="text-muted-foreground flex flex-wrap gap-x-3 gap-y-1">
+      {
+        tech.map(item => (
+          <li class="before:content-['·'] before:mr-1 first:before:content-none">
+            {item}
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</li>

@@ -1,0 +1,44 @@
+# 个人站点的 Caddy 配置
+#
+# 部署位置：/etc/caddy/Caddyfile（或 include 进主配置）
+# 前置条件（缺一不可，见 specs/001-portfolio-blog/contracts/site-contract.md 第 4 节）：
+#   1. 域名 A/AAAA 记录已指向本机，且 DNS 已生效——必须在启动 Caddy **之前**完成
+#   2. 80 与 443 端口对外可达（轻量服务器默认常只开 22，需在控制台放行）
+#   3. Caddy 的数据目录可写且持久
+#
+# Caddy 会自动申请并续期证书，并在两者都失败时于 Let's Encrypt 与 ZeroSSL 之间回退。
+# 调试配置时请先改用 ACME staging，否则命中速率限制可能导致最长一周无法签发：
+#   https://acme-staging-v02.api.letsencrypt.org/directory
+
+# 【待填】替换为你的域名。多个域名用逗号分隔。
+example.com, www.example.com {
+	root * /srv/blog/current
+	encode zstd gzip
+	file_server
+
+	# 站点地图与订阅源按静态文件直接提供
+	# （Astro 已把它们输出为 /sitemap-index.xml 与 /rss.xml）
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		# 站点无后端，不需要跨域能力
+		-Server
+	}
+
+	# 自定义 404（Astro 输出 dist/404.html）
+	handle_errors {
+		@notfound expression {err.status_code} == 404
+		handle @notfound {
+			rewrite * /404.html
+			file_server
+		}
+	}
+
+	log {
+		output file /var/log/caddy/personal-blog.log {
+			roll_size 10MiB
+			roll_keep 5
+		}
+	}
+}

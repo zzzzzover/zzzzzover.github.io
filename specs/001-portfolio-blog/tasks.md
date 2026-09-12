@@ -42,7 +42,7 @@ description: "Task list for 个人作品集与技术博客站点"
 - [X] T002 安装依赖并确认构建通过：在仓库根执行 `pnpm install` 后执行 `pnpm build`（脚本定义于 `package.json`），预期 45 个页面构建成功（Node.js MUST ≥ 22.12.0）
 - [X] T003 [P] 清除模板演示内容：删除 `src/content/posts/` 下的演示文章及 `_color-schemes/`、`_releases/`、`examples/` 目录与全部配图（约 5.4 MB），同时删除 `src/assets/images/` 下的演示图。**实测坑**：删完必须清 `node_modules/.astro`（Astro 的内容缓存默认在这里，只删 `.astro` 不够），否则构建仍会引用已删除的图片而报 `ImageNotFound`
 - [X] T004 [P] 更新根 `.gitignore`：追加 `public/pagefind/`、`dist/`、`.astro/`、`node_modules/`（模板 `build` 脚本会把 Pagefind 索引写回 `public/`）
-- [X] T005 字体处理（两部分，缺一不可）：**① 核对构建期外部依赖已移除**——源副本 `.verify/astro-paper` **已应用**这些改动，故此处是逐项核对而非重做：确认 `astro.config.ts` 无 `fonts` 块、`src/layouts/Layout.astro` 无 `<Font>`、`src/styles/theme.css` 的 `--font-app` 为系统字体栈（含 PingFang SC / Microsoft YaHei / Noto Sans CJK SC）。**② 生成分享图子集字体**（开发期工具，不进构建）——新增 `scripts/build-og-font.mjs`，用 `subset-font` 从 Noto Sans SC 生成**静态实例**（必须带 `variationAxes: { wght: 400 }`，否则 satori 因可变字体崩溃），覆盖站点信息 + 全部内容标题与描述 + 3000 常用汉字；用 `fontkit` 回读字体生成字符覆盖清单；产出 `src/assets/fonts/og-subset.ttf`（约 821 KB）与 `src/assets/fonts/og-subset.coverage.json`，二者**提交进仓库**。配方见 `.verify/astro-paper/og3.mjs` 与 `research.md` D8。**动态分享图不在此关闭**，见 T014
+- [X] T005 字体处理（两部分，缺一不可）：**① 核对构建期外部依赖已移除**——源副本 `.verify/astro-paper` **已应用**这些改动，故此处是逐项核对而非重做：确认 `astro.config.ts` 无 `fonts` 块、`src/layouts/Layout.astro` 无 `<Font>`、`src/styles/theme.css` 的 `--font-app` 为系统字体栈（含 PingFang SC / Microsoft YaHei / Noto Sans CJK SC）。**② 生成分享图子集字体**（开发期工具，不进构建）——新增 `scripts/build-og-font.mjs`，用 `subset-font` 从 Noto Sans SC 生成**静态实例**（必须带 `variationAxes: { wght: 400 }`，否则 satori 因可变字体崩溃），覆盖《通用规范汉字表》一级字表 3500 字 + 固定标点范围 + 全部内容 frontmatter 字符；用 `fontkit` 回读字体生成字符覆盖清单；产出 `src/assets/fonts/og-subset.ttf`（约 821 KB）与 `src/assets/fonts/og-subset.coverage.json`，二者**提交进仓库**。配方见 `.verify/astro-paper/og3.mjs` 与 `research.md` D8。**动态分享图不在此关闭**，见 T014
 - [X] T006 [P] 整理 `package.json`：修改 `name`，确认 `build` 脚本仍为 `astro check && astro build && pagefind --site dist`，移除不适用的 lint/format 脚本（保留 `prettier` 相关）
 
 **Checkpoint**: `pnpm build` 在无外网构建环境下通过
@@ -57,14 +57,14 @@ description: "Task list for 个人作品集与技术博客站点"
 
 **⚠️ CRITICAL**: 本阶段完成前，任何用户故事都无法产出可验收的成果
 
-- [ ] T007 配置站点基础信息 `astro-paper.config.ts`：`site.url` / `site.title` / `site.description` / `site.author` / `site.profile` / `site.ogImage` / `site.lang: "zh"` / `site.timezone: "Asia/Shanghai"`。（**社交账号与分享目标不在本任务**：前者归 T016，后者归 T034。）
-- [ ] T008 [P] 界面中文化：新增 `src/i18n/lang/zh.ts`（`satisfies UIStrings`，覆盖 `nav`/`post`/`pagination`/`home`/`footer`/`pages`/`a11y`/`notFound` 全部键，类型定义见 `src/i18n/types.ts`），并在 `astro.config.ts` 设 `i18n.locales: ["zh"]`、`defaultLocale: "zh"`（FR-035）
-- [ ] T009 [P] 扩展内容 schema `src/content.config.ts`：新增 `projects` 集合，字段 `title`/`summary`/`role`/`tech`/`status`/`repo`/`demo`/`demoNote`/`cover`/`featured`/`order`；其中 `status` 枚举 MUST 为 `运行中` / `维护中` / `已归档` / `原型`，`tech` MUST 至少 1 项，`repo`/`demo`/`cover` 可选
-- [ ] T010 [P] 新增共享组件 `src/components/ProjectCard.astro`：props 对齐 `projects` schema；展示名称、一句话说明、技术要点、状态；`cover` 缺省时用默认样式，MUST NOT 出现破图；卡片链接指向 `/projects/<slug>/`
-- [ ] T011 建立部署通道：`deploy/Caddyfile`（静态服务 + 自动 HTTPS）、`deploy/post-receive`（拉取 → 安装 → 构建 → 预算与链接检查 → **原子切换发布目录** → 保留回滚点）、`deploy/README.md`。流水线 MUST 满足 `contracts/site-contract.md` 第 4 节：任一步失败 MUST 中止且 MUST NOT 切换服务目录
-- [ ] T012 [P] 新增校验脚本：`scripts/check-links.mjs`（构建产物内部链接与资源可达性）、`scripts/check-budget.mjs`（首屏 JS ≤50 KB gzip、静态资源 ≤1 MB、单篇媒体 ≤5 MB）、`scripts/check-og-font.mjs`（**构建期字符覆盖检查**：扫描全部内容与站点信息，凡有字符不在 `og-subset.coverage.json` 中即构建失败，并报出具体字符与来源文件。零构建期依赖，只读清单）
-- [ ] T013 导航增加 Projects 入口：修改 `src/components/Header.astro`，并在 T008 的 zh 文案中补对应键（FR-005）
-- [ ] T014 恢复动态分享图并使用本地子集字体：`astro-paper.config.ts` 设 `features.dynamicOgImage: true`；重写 `src/pages/og.png.ts`（全站默认图）与 `src/pages/posts/[...slug]/index.png.ts`（逐篇图），**不再使用 Astro 的 `fontData` / `experimental_getFontFileURL`**，改为直接读取 `src/assets/fonts/og-subset.ttf` 传给 satori；把 `check-og-font` 接入 `package.json` 的 `build` 脚本；同时替换 `public/default-og.jpg` 为本项目默认图（无独立封面时的回退）（FR-024）
+- [X] T007 配置站点基础信息 `astro-paper.config.ts`：`site.url` / `site.title` / `site.description` / `site.author` / `site.profile` / `site.ogImage` / `site.lang: "zh"` / `site.timezone: "Asia/Shanghai"`。（**社交账号与分享目标不在本任务**：前者归 T016，后者归 T034。）
+- [X] T008 [P] 界面中文化：新增 `src/i18n/lang/zh.ts`（`satisfies UIStrings`，覆盖 `nav`/`post`/`pagination`/`home`/`footer`/`pages`/`a11y`/`notFound` 全部键，类型定义见 `src/i18n/types.ts`），并在 `astro.config.ts` 设 `i18n.locales: ["zh"]`、`defaultLocale: "zh"`（FR-035）
+- [X] T009 [P] 扩展内容 schema `src/content.config.ts`：新增 `projects` 集合，字段 `title`/`summary`/`role`/`tech`/`status`/`repo`/`demo`/`demoNote`/`cover`/`featured`/`order`；其中 `status` 枚举 MUST 为 `运行中` / `维护中` / `已归档` / `原型`，`tech` MUST 至少 1 项，`repo`/`demo`/`cover` 可选
+- [X] T010 [P] 新增共享组件 `src/components/ProjectCard.astro`：props 对齐 `projects` schema；展示名称、一句话说明、技术要点、状态；`cover` 缺省时用默认样式，MUST NOT 出现破图；卡片链接指向 `/projects/<slug>/`
+- [X] T011 建立部署通道：`deploy/Caddyfile`（静态服务 + 自动 HTTPS）、`deploy/post-receive`（拉取 → 安装 → 构建 → 预算与链接检查 → **原子切换发布目录** → 保留回滚点）、`deploy/README.md`。流水线 MUST 满足 `contracts/site-contract.md` 第 4 节：任一步失败 MUST 中止且 MUST NOT 切换服务目录
+- [X] T012 [P] 新增校验脚本：`scripts/check-links.mjs`（构建产物内部链接与资源可达性）、`scripts/check-budget.mjs`（首屏 JS ≤50 KB gzip、静态资源 ≤1 MB、单篇媒体 ≤5 MB）、`scripts/check-og-font.mjs`（**构建期字符覆盖检查**：扫描全部内容与站点信息，凡有字符不在 `og-subset.coverage.json` 中即构建失败，并报出具体字符与来源文件。零构建期依赖，只读清单）
+- [X] T013 导航增加 Projects 入口：修改 `src/components/Header.astro`，并在 T008 的 zh 文案中补对应键（FR-005）
+- [X] T014 恢复动态分享图并使用本地子集字体：`astro-paper.config.ts` 设 `features.dynamicOgImage: true`；重写 `src/pages/og.png.ts`（全站默认图）与 `src/pages/posts/[...slug]/index.png.ts`（逐篇图），**不再使用 Astro 的 `fontData` / `experimental_getFontFileURL`**，改为直接读取 `src/assets/fonts/og-subset.ttf` 传给 satori；把 `check-og-font` 接入 `package.json` 的 `build` 脚本；同时替换 `public/default-og.jpg` 为本项目默认图（无独立封面时的回退）（FR-024）
 
 **Checkpoint**: 站点可构建、可中文化、项目集合 schema 就绪、部署通道可执行
 

@@ -38,8 +38,9 @@ const rssHref = getRelativeLocaleUrl(
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- 只保留 SVG 图标：模板原本还引用 favicon.ico，但从未提供该文件，
+         导致每一页都有一个 404。现代浏览器均支持 SVG 图标，故删除该遗留引用。 -->
     <link rel="icon" type="image/svg+xml" href={getAssetPath("favicon.svg")} />
-    <link rel="icon" href={getAssetPath("favicon.ico")} />
     <link rel="canonical" href={canonicalURL} />
     <meta name="generator" content={Astro.generator} />
 

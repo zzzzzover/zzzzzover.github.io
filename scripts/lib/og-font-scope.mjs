@@ -24,6 +24,16 @@ function frontmatter(text) {
   return m ? m[1] : "";
 }
 
+/**
+ * 配置文件只取**字符串字面量**，不取注释与代码。
+ *
+ * 曾经整文件扫描，结果注释里的 ⚠️ 这类装饰性 emoji 会让构建失败——
+ * 而注释根本不会进入分享卡片。扫描范围必须与实际渲染内容对齐。
+ */
+function stringLiterals(text) {
+  return (text.match(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`/g) ?? []).join("");
+}
+
 function walk(dir, out = []) {
   if (!existsSync(dir)) return out;
   for (const name of readdirSync(dir)) {
@@ -49,7 +59,9 @@ export function collectScopedChars(root) {
 
   for (const file of files) {
     const raw = readFileSync(file, "utf8");
-    const text = CONTENT_EXTENSIONS.has(extname(file)) ? frontmatter(raw) : raw;
+    const text = CONTENT_EXTENSIONS.has(extname(file))
+      ? frontmatter(raw)
+      : stringLiterals(raw);
     const before = codepoints.size;
     for (const ch of text) {
       const cp = ch.codePointAt(0);
@@ -60,21 +72,32 @@ export function collectScopedChars(root) {
   return { codepoints, sources, fileCount: files.length };
 }
 
-/** 把码点集合压缩为连续区间，便于清单文件保持小体积 */
-export function toRanges(sortedCodepoints) {
-  const ranges = [];
-  for (const cp of sortedCodepoints) {
-    const last = ranges[ranges.length - 1];
-    if (last && cp === last[1] + 1) last[1] = cp;
-    else ranges.push([cp, cp]);
+/**
+ * 覆盖清单用**位图**而不是区间表示。
+ *
+ * 曾经用过"连续区间"压缩，但对真实的中文字符集完全失效：
+ * 常用汉字散布在整个 CJK 区块（U+4E00–U+9F9F），几乎每个字都自成一个区间，
+ * 结果 3918 个码位被写成 2513 段区间、93 KB JSON。
+ *
+ * 位图覆盖 BMP（U+0000–U+FFFF）用 8192 字节，base64 后约 11 KB；
+ * BMP 之外的码位（emoji 等）极少，单独用数组列出。
+ */
+export function toCoverage(codepoints) {
+  const bmp = new Uint8Array(0x10000 / 8);
+  const astral = [];
+  for (const cp of codepoints) {
+    if (cp < 0x10000) bmp[cp >> 3] |= 1 << (cp & 7);
+    else astral.push(cp);
   }
-  return ranges;
+  return { bmp: Buffer.from(bmp).toString("base64"), astral: astral.sort((a, b) => a - b) };
 }
 
-/** 把区间展开回码点集合 */
-export function fromRanges(ranges) {
-  const set = new Set();
-  for (const [a, b] of ranges) for (let c = a; c <= b; c++) set.add(c);
+export function fromCoverage({ bmp, astral = [] }) {
+  const bytes = Buffer.from(bmp, "base64");
+  const set = new Set(astral);
+  for (let cp = 0; cp < bytes.length * 8; cp++) {
+    if (bytes[cp >> 3] & (1 << (cp & 7))) set.add(cp);
+  }
   return set;
 }
 

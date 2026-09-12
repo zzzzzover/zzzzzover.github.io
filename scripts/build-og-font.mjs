@@ -18,7 +18,7 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import subsetFont from "subset-font";
 import * as fontkit from "fontkit";
-import { collectScopedChars, toRanges, describeCodepoint } from "./lib/og-font-scope.mjs";
+import { collectScopedChars, toCoverage, describeCodepoint } from "./lib/og-font-scope.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCE_FONT = join(ROOT, ".cache/fonts/NotoSansSC[wght].ttf");
@@ -31,14 +31,20 @@ const OUT_MANIFEST = join(OUT_DIR, "og-subset.coverage.json");
 /**
  * 恒定覆盖范围：即使当前内容用不到也预先包含，
  * 目的是让日常写作（新标题、新标点）几乎不会触发重新生成。
+ *
+ * ⚠️ 这里**不能**用「CJK 区块的前 N 个码位」来近似「常用汉字」。
+ * CJK 统一表意文字区块按部首/笔画排序，不是按频率排序：
+ * U+4E00–U+59B7 这个区间根本不含「我」「你」「他」等最常用的字。
+ * 本项目初期就是这样写错的，被构建期覆盖检查抓了出来（见 research.md D8）。
+ * 因此改用《通用规范汉字表》一级字表（3500 字），见 COMMON_HANZI_FILE。
  */
 const FIXED_RANGES = [
   [0x20, 0x7e], // ASCII 可见字符
   [0x2000, 0x206f], // 常用标点
   [0x3000, 0x303f], // CJK 符号与标点
-  [0x4e00, 0x4e00 + 2999], // 3000 常用汉字
   [0xff00, 0xffef], // 全角字符
 ];
+const COMMON_HANZI_FILE = join(ROOT, "scripts/data/common-hanzi-3500.txt");
 
 const rel = p => p.slice(ROOT.length + 1);
 
@@ -63,15 +69,24 @@ async function main() {
   const source = await loadSourceFont();
   console.log(`源字体：${(source.length / 1048576).toFixed(1)} MB`);
 
-  // 1. 汇总需要覆盖的码位：固定范围 ∪ 会进入分享卡片的内容字符
+  // 1. 汇总需要覆盖的码位：固定标点范围 ∪ 常用汉字表 ∪ 会进入分享卡片的内容字符
   const { codepoints: scoped, sources, fileCount } = collectScopedChars(ROOT);
   const all = new Set();
   for (const [a, b] of FIXED_RANGES) for (let c = a; c <= b; c++) all.add(c);
-  for (const cp of scoped) all.add(cp);
+
+  const commonHanzi = readFileSync(COMMON_HANZI_FILE, "utf8");
+  let hanziCount = 0;
+  for (const ch of commonHanzi) {
+    const cp = ch.codePointAt(0);
+    if (cp >= 0x4e00 && cp <= 0x9fff) {
+      all.add(cp);
+      hanziCount++;
+    }
+  }
 
   console.log(`扫描 ${fileCount} 个文件的 frontmatter 与站点配置，得到 ${scoped.size} 个内容字符`);
   for (const s of sources) console.log(`  ${s.file}  +${s.count}`);
-  console.log(`合计需覆盖 ${all.size} 个码位`);
+  console.log(`常用汉字表 ${hanziCount} 字 + 固定标点范围，合计需覆盖 ${all.size} 个码位`);
 
   // 2. 子集化。variationAxes 是关键：不做这一步输出仍是可变字体，satori 会崩
   const subset = await subsetFont(source, String.fromCodePoint(...[...all].sort((a, b) => a - b)), {
@@ -87,17 +102,20 @@ async function main() {
   // 3. 从**实际产物**回读字符集生成清单，而不是从输入文本推导——
   //    这样清单与字体文件不可能漂移
   const covered = [...fontkit.create(subset).characterSet].sort((a, b) => a - b);
+  const coverage = toCoverage(covered);
   const manifest = {
     _comment:
       "由 scripts/build-og-font.mjs 生成。此清单从实际字体文件回读，供构建期 scripts/check-og-font.mjs 使用。不要手工编辑。",
     font: "og-subset.ttf",
     glyphCount: covered.length,
-    ranges: toRanges(covered),
+    _coverageFormat: "bmp 为 U+0000–U+FFFF 的位图（base64）；astral 为 BMP 之外的码位",
+    bmp: coverage.bmp,
+    astral: coverage.astral,
   };
   const manifestText = JSON.stringify(manifest, null, 2) + "\n";
   writeFileSync(OUT_MANIFEST, manifestText);
   console.log(
-    `✓ ${rel(OUT_MANIFEST)}  ${covered.length} 个码位 / ${manifest.ranges.length} 段区间 / ${(manifestText.length / 1024).toFixed(1)} KB`,
+    `✓ ${rel(OUT_MANIFEST)}  ${covered.length} 个码位 / ${(manifestText.length / 1024).toFixed(1)} KB`,
   );
 
   // 4. 自检：会进入分享卡片的字符必须全部被覆盖
