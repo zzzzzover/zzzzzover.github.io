@@ -28,6 +28,8 @@ export interface UIStrings {
   };
   home: {
     socialLinks: string;
+    featuredProjects: string;
+    allProjects: string;
     featured: string;
     recentPosts: string;
     allPosts: string;

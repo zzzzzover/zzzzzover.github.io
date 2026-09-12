@@ -1,0 +1,17 @@
+---
+import { getCollection } from "astro:content";
+import ProjectLayout from "@/layouts/ProjectLayout.astro";
+import { getProjectParam } from "@/utils/projectPaths";
+
+export async function getStaticPaths() {
+  const projects = await getCollection("projects");
+  return projects.map(entry => ({
+    params: { slug: getProjectParam(entry.id) },
+    props: entry,
+  }));
+}
+
+const entry = Astro.props;
+---
+
+<ProjectLayout {...entry} />

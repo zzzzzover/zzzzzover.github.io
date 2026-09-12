@@ -30,6 +30,8 @@ export default {
   },
   home: {
     socialLinks: "Social Links",
+    featuredProjects: "Featured Projects",
+    allProjects: "All Projects",
     featured: "Featured",
     recentPosts: "Recent Posts",
     allPosts: "All Posts",

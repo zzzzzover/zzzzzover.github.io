@@ -34,6 +34,8 @@ export default {
   },
   home: {
     socialLinks: "联系方式",
+    featuredProjects: "精选项目",
+    allProjects: "全部项目",
     featured: "精选",
     recentPosts: "最新文章",
     allPosts: "全部文章",

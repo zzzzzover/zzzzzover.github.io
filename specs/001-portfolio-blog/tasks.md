@@ -76,11 +76,11 @@ description: "Task list for 个人作品集与技术博客站点"
 
 **Independent Test**: 只实现本阶段并发布，让一个不了解站主的人打开首页，检验他能否说出站主身份、技术方向与联系方式（`quickstart.md` V3）
 
-- [ ] T015 [US1] 重写首页 hero 区 `src/pages/index.astro`：用站点配置替换模板硬编码的 `Mingalaba` 与 AstroPaper 介绍文案；联系方式**复用模板既有 `src/components/Socials.astro`，MUST NOT 新建组件**；首屏（无需滚动）MUST 可见站主身份、主要技术方向与至少一种联系方式（FR-001、FR-002、FR-006、SC-001）
+- [X] T015 [US1] 重写首页 hero 区 `src/pages/index.astro`：用站点配置替换模板硬编码的 `Mingalaba` 与 AstroPaper 介绍文案；联系方式**复用模板既有 `src/components/Socials.astro`，MUST NOT 新建组件**；首屏（无需滚动）MUST 可见站主身份、主要技术方向与至少一种联系方式（FR-001、FR-002、FR-006、SC-001）
 - [ ] T016 [P] [US1] 全站联系方式入口核对：在 `astro-paper.config.ts` 配置 `socials`（至少 1 项，含邮箱对应的 `mail` 条目）；确认模板既有的 `src/components/Footer.astro` + `src/components/Socials.astro` **已在每一页**提供返回首页与联系站主的入口，并据此满足 FR-005——**MUST NOT 另建 `ContactLinks` 之类的重复组件**（宪法 I）；MUST NOT 输出手机号与简历下载入口（FR-004、FR-005、FR-036）
-- [ ] T017 [US1] 首页新增精选项目区 `src/pages/index.astro`：渲染 `featured: true` 的项目，复用 `ProjectCard`；无精选项目时该区域 MUST 不出现且不留空位
+- [X] T017 [US1] 首页新增精选项目区 `src/pages/index.astro`：渲染 `featured: true` 的项目，复用 `ProjectCard`；无精选项目时该区域 MUST 不出现且不留空位
 - [ ] T018 [US1] 编写 `src/content/pages/about.md`：个人简介、技能概览、工作经历、联系方式与公开技术账号；MUST NOT 含手机号与简历文件（FR-003、FR-004）
-- [ ] T019 [US1] 首页最新文章区中文化 `src/pages/index.astro`：文案取自 zh 翻译，条数由 `posts.perIndex` 控制，链接指向 `/posts/`（FR-001）
+- [X] T019 [US1] 首页最新文章区中文化 `src/pages/index.astro`：文案取自 zh 翻译，条数由 `posts.perIndex` 控制，链接指向 `/posts/`（FR-001）
 
 **Checkpoint**: 首页与"关于我"独立可用——即使没有项目和文章也是一个成立的站点
 
@@ -92,11 +92,11 @@ description: "Task list for 个人作品集与技术博客站点"
 
 **Independent Test**: 只发布一个项目详情页并可从首页到达，检验读者能否复述该项目的目标、关键取舍与结果（`quickstart.md` V4）
 
-- [ ] T020 [US2] 新增 `src/layouts/ProjectLayout.astro`：承载六段式正文——要解决的问题 / 方案概述 / 关键技术取舍 / 架构或流程图 / 运行截图 / 结果与现状（FR-008）
-- [ ] T021 [US2] 新增项目列表 `src/pages/projects/index.astro`：展示每个项目的名称、一句话说明、技术要点与状态（FR-007），复用 `ProjectCard`（SC-002）
-- [ ] T022 [US2] 新增项目详情 `src/pages/projects/[slug].astro`（**扁平集合用单段参数，不用 `[...slug]`**——`[...slug]` 会额外匹配 `/projects/a/b/` 这类不存在的多级路径）：地址稳定为 `/projects/<slug>/`；`repo` 缺省时源码入口 MUST 呈现为不可用状态而非失效链接（FR-009）；`demo` 缺省时 MUST 完全不渲染演示区域（FR-010）
-- [ ] T023 [P] [US2] 编写首个项目 `src/content/projects/bili-dynamics.md`：六段式正文 + 架构图 + 运行截图；截图与正文 MUST 通过人工核对，不得出现 `.env`/`config.json` 中的凭证或账号信息（FR-032）
-- [ ] T024 [P] [US2] 编写第二个项目 `src/content/projects/tech-feed.md`：同上六段式要求（SC-005）
+- [X] T020 [US2] 新增 `src/layouts/ProjectLayout.astro`：承载六段式正文——要解决的问题 / 方案概述 / 关键技术取舍 / 架构或流程图 / 运行截图 / 结果与现状（FR-008）
+- [X] T021 [US2] 新增项目列表 `src/pages/projects/index.astro`：展示每个项目的名称、一句话说明、技术要点与状态（FR-007），复用 `ProjectCard`（SC-002）
+- [X] T022 [US2] 新增项目详情 `src/pages/projects/[slug].astro`（**扁平集合用单段参数，不用 `[...slug]`**——`[...slug]` 会额外匹配 `/projects/a/b/` 这类不存在的多级路径）：地址稳定为 `/projects/<slug>/`；`repo` 缺省时源码入口 MUST 呈现为不可用状态而非失效链接（FR-009）；`demo` 缺省时 MUST 完全不渲染演示区域（FR-010）
+- [X] T023 [P] [US2] 编写首个项目 `src/content/projects/bili-dynamics.md`：六段式正文 + 架构图 + 运行截图；截图与正文 MUST 通过人工核对，不得出现 `.env`/`config.json` 中的凭证或账号信息（FR-032）
+- [X] T024 [P] [US2] 编写第二个项目 `src/content/projects/tech-feed.md`：同上六段式要求（SC-005）
 - [ ] T025 [US2] 项目详情响应式核对 `src/pages/projects/[slug].astro` 与 `src/layouts/ProjectLayout.astro`：宽表格、长代码行、宽截图 MUST NOT 导致整页横向滚动（FR-026）
 
 **Checkpoint**: 项目区独立可用，且新增项目不需要改动任何页面代码（FR-011）

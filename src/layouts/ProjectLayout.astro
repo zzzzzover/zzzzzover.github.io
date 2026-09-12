@@ -1,0 +1,112 @@
+---
+import { render, type CollectionEntry } from "astro:content";
+import { getRelativeLocaleUrl } from "astro:i18n";
+import IconArrowLeft from "@/assets/icons/IconArrowLeft.svg";
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+import Main from "@/components/Main.astro";
+import { useTranslations } from "@/i18n";
+import config from "@/config";
+
+/**
+ * 项目详情页版式。与文章页分开实现：项目页要承载「问题 → 方案 → 取舍 → 架构 → 截图 → 结果」
+ * 这套结构，与按时间阅读的文章是两种信息组织方式（FR-008）。
+ */
+type Props = CollectionEntry<"projects">;
+
+const entry = Astro.props;
+const { title, summary, role, tech, status, repo, demo, demoNote } = entry.data;
+
+const locale = Astro.currentLocale ?? config.site.lang;
+const t = useTranslations(locale);
+const { Content } = await render(entry);
+
+const isArchived = status === "已归档";
+---
+
+<Layout
+  title={`${title} | ${config.site.title}`}
+  description={summary}
+  ogImage={typeof entry.data.cover === "string" ? entry.data.cover : undefined}
+>
+  <Header />
+  <Breadcrumb />
+  <Main pageTitle={title}>
+    <p class="text-muted-foreground -mt-2 mb-6 text-lg">{summary}</p>
+
+    <!-- 结构化摘要：面试官先看这里，再决定要不要读正文 -->
+    <dl
+      class="border-border my-6 grid grid-cols-1 gap-x-6 gap-y-3 border-y py-4 text-sm sm:grid-cols-3"
+    >
+      <div>
+        <dt class="text-muted-foreground">承担角色</dt>
+        <dd class="mt-1">{role}</dd>
+      </div>
+      <div>
+        <dt class="text-muted-foreground">当前状态</dt>
+        <dd class:list={["mt-1", { "text-muted-foreground": isArchived }]}>
+          {status}
+        </dd>
+      </div>
+      <div>
+        <dt class="text-muted-foreground">技术要点</dt>
+        <dd class="mt-1">{tech.join(" · ")}</dd>
+      </div>
+    </dl>
+
+    <!-- 源码入口：未开源时呈现为不可用状态，而不是指向 404 的链接（FR-009） -->
+    <div class="my-6 flex flex-wrap items-center gap-4">
+      {
+        repo ? (
+          <a
+            href={repo}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-accent decoration-dashed underline-offset-4 hover:underline"
+          >
+            源代码仓库 →
+          </a>
+        ) : (
+          <span class="text-muted-foreground" aria-disabled="true">
+            源代码未公开
+          </span>
+        )
+      }
+      {
+        demo && (
+          <a
+            href={demo.startsWith("http") ? demo : demo}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-accent decoration-dashed underline-offset-4 hover:underline"
+          >
+            打开可交互演示 →
+          </a>
+        )
+      }
+    </div>
+
+    {
+      demo && demoNote && (
+        <p class="text-muted-foreground mb-6 text-sm">演示说明：{demoNote}</p>
+      )
+    }
+
+    <article class="app-prose">
+      <Content />
+    </article>
+
+    <div class="my-10">
+      <a
+        href={getRelativeLocaleUrl(locale, "projects")}
+        class="text-accent inline-flex items-center gap-1 decoration-dashed underline-offset-4 hover:underline"
+      >
+        <IconArrowLeft class="inline-block" />
+        {t.nav.projects}
+      </a>
+    </div>
+  </Main>
+  <Footer />
+</Layout>

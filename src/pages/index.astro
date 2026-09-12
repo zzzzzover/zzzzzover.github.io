@@ -8,6 +8,7 @@ import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import Socials from "@/components/Socials.astro";
 import Card from "@/components/Card.astro";
+import ProjectCard from "@/components/ProjectCard.astro";
 import LinkButton from "@/components/LinkButton.astro";
 import { getSortedPosts } from "@/utils/getSortedPosts";
 import { useTranslations } from "@/i18n";
@@ -22,6 +23,15 @@ const posts = await getCollection("posts");
 const sortedPosts = getSortedPosts(posts);
 const featuredPosts = sortedPosts.filter(({ data }) => data.featured);
 const recentPosts = sortedPosts.filter(({ data }) => !data.featured);
+
+// 项目排序：order 升序优先，其次按标题
+const allProjects = (await getCollection("projects")).sort((a, b) => {
+  const ao = a.data.order ?? Number.MAX_SAFE_INTEGER;
+  const bo = b.data.order ?? Number.MAX_SAFE_INTEGER;
+  return ao !== bo ? ao - bo : a.data.title.localeCompare(b.data.title, "zh");
+});
+const featuredProjects = allProjects.filter(p => p.data.featured);
+
 const homePath = getRelativeLocaleUrl(locale, "");
 ---
 
@@ -33,9 +43,13 @@ const homePath = getRelativeLocaleUrl(locale, "");
     data-home-path={homePath}
     class="app-layout my-1"
   >
+    <!--
+      首屏：必须在无需滚动的情况下给出「你是谁、做什么、怎么联系」（FR-002、SC-001）。
+      文案全部来自站点配置，不硬编码在页面里。
+    -->
     <section id="hero" class="border-border border-b pt-8 pb-6">
       <h1 class="my-4 inline-block text-4xl font-bold sm:my-8 sm:text-5xl">
-        Mingalaba
+        {config.site.title}
       </h1>
       <a
         target="_blank"
@@ -52,22 +66,8 @@ const homePath = getRelativeLocaleUrl(locale, "");
         <span class="sr-only">RSS Feed</span>
       </a>
 
-      <p>
-        AstroPaper is a minimal, responsive, accessible and SEO-friendly Astro
-        blog theme. This theme follows best practices and provides accessibility
-        out of the box. Light and dark mode are supported by default. Moreover,
-        additional color schemes can also be configured.
-      </p>
-      <p class="mt-2">
-        Read the blog posts or check{" "}
-        <LinkButton
-          class="hover:text-accent underline decoration-dashed underline-offset-4"
-          href="https://github.com/satnaing/astro-paper#readme"
-        >
-          README
-        </LinkButton>{" "}
-        for more info.
-      </p>
+      <p>{config.site.description}</p>
+
       {
         socials.length > 0 && (
           <div class="mt-4 flex max-sm:flex-col sm:items-center">
@@ -79,6 +79,30 @@ const homePath = getRelativeLocaleUrl(locale, "");
         )
       }
     </section>
+
+    {
+      featuredProjects.length > 0 && (
+        <section
+          id="featured-projects"
+          class:list={[
+            "pt-12 pb-6",
+            {
+              "border-border border-b":
+                featuredPosts.length > 0 || recentPosts.length > 0,
+            },
+          ]}
+        >
+          <h2 class="text-2xl font-semibold tracking-wide">
+            {t.home.featuredProjects}
+          </h2>
+          <ul>
+            {featuredProjects.map(entry => (
+              <ProjectCard variant="h3" {...entry} />
+            ))}
+          </ul>
+        </section>
+      )
+    }
 
     {
       featuredPosts.length > 0 && (
@@ -116,11 +140,24 @@ const homePath = getRelativeLocaleUrl(locale, "");
       )
     }
 
-    <div class="my-8 text-center">
-      <LinkButton href={getRelativeLocaleUrl(locale, "posts")}>
-        {t.home.allPosts}
-        <IconArrowRight class="inline-block rtl:-rotate-180" />
-      </LinkButton>
+    <!-- 两个入口都给：作品集与技术写作是这个站的两个使命，不能只留一个 -->
+    <div class="my-8 flex flex-wrap justify-center gap-4">
+      {
+        allProjects.length > 0 && (
+          <LinkButton href={getRelativeLocaleUrl(locale, "projects")}>
+            {t.home.allProjects}
+            <IconArrowRight class="inline-block rtl:-rotate-180" />
+          </LinkButton>
+        )
+      }
+      {
+        sortedPosts.length > 0 && (
+          <LinkButton href={getRelativeLocaleUrl(locale, "posts")}>
+            {t.home.allPosts}
+            <IconArrowRight class="inline-block rtl:-rotate-180" />
+          </LinkButton>
+        )
+      }
     </div>
   </main>
   <Footer />
