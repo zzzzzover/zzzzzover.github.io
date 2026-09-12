@@ -1,0 +1,22 @@
+# 依赖与构建产物（具体技术栈在方案阶段确定，此处先覆盖常见项）
+node_modules/
+dist/
+build/
+.astro/
+.cache/
+*.log
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# 本地环境与凭证（始终不提交）
+.env
+.env.*
+!.env.example
+
+# Agent 集成产物（由 specify init 生成，可随时重装，不属于本项目内容）
+.dsh/
