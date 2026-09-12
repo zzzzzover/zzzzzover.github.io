@@ -10,9 +10,9 @@
 
 | 实体 | 存储形态 | 数量级 | 地址 | 对应需求 |
 |---|---|---|---|---|
-| Article（文章） | `src/content/articles/<slug>.md` | 10–30 | `/writing/<slug>/` | FR-012 … FR-016 |
+| Article（文章） | `src/content/posts/<slug>.md` | 10–30 | `/posts/<slug>/` | FR-012 … FR-016 |
 | Project（项目） | `src/content/projects/<slug>.md` | 5–15 | `/projects/<slug>/` | FR-007 … FR-011 |
-| Page（固定页面） | `src/content/pages/<slug>.md` | 1–3 | 由内容指定 | FR-003 |
+| Page（固定页面） | `src/content/pages/<slug>.md` | 1–3 | 由 `src/pages/*.astro` 决定 | FR-003 |
 | Asset（素材） | `src/assets/` 或 `public/` | 随内容增长 | 由构建决定 | FR-014、SC-003 |
 | Feed（订阅源） | 构建期派生，无独立文件 | 1 | `/rss.xml` | FR-022 |
 | SiteConfig（站点配置） | `src/config.ts`（单例） | 1 | — | FR-001、FR-006、FR-036 |
@@ -23,15 +23,25 @@
 
 **职责**：一篇技术写作，是订阅源与文章列表的数据来源。
 
+> **字段命名基线**：下表使用模板 AstroPaper 的既有字段名，而非另造一套。依据宪法 I
+> 「简约优先」——模板的 schema 已经过验证，改名只会增加迁移与维护成本，不产生任何价值。
+> 实测确认于 `src/content.config.ts`（见 `verify.md`）。
+
 | 字段 | 类型 | 必填 | 校验规则 |
 |---|---|---|---|
-| `title` | string | 是 | 非空；长度 ≤ 80 字符 |
-| `summary` | string | 是 | 非空；用于列表与分享卡片，长度 ≤ 160 字符 |
-| `date` | date | 是 | ISO `YYYY-MM-DD`；不得晚于构建当日 |
+| `title` | string | 是 | 非空 |
+| `description` | string | 是 | 非空；用于列表与分享卡片 |
+| `pubDatetime` | datetime | 是 | 不得晚于构建当日；列表与订阅源按此倒序 |
+| `modDatetime` | datetime | 否 | 修订时间；与固定地址配合满足 FR-015 |
 | `draft` | boolean | 否（默认 `false`） | 为 `true` 时该文章 MUST 从构建产物、列表与订阅源中完全排除（FR-020） |
-| `cover` | image | 否 | 缺省时列表与分享卡片使用默认样式，MUST NOT 出现破图 |
-| `tags` | string[] | 否（默认空） | 元素非空且不重复 |
-| `lang` | string | 否（默认 `zh`） | 固定为 `zh`；站点不维护双语正文（FR-035） |
+| `ogImage` | image 或 string | 否 | 缺省时使用站点默认分享图，MUST NOT 出现破图 |
+| `featured` | boolean | 否 | 为 `true` 时进入首页精选区 |
+| `tags` | string[] | 否（默认 `["others"]`） | 元素非空且不重复 |
+| `author` | string | 否 | 缺省取站点配置 |
+| `canonicalURL` | string | 否 | 转载内容的原始地址 |
+| `hideEditPost` | boolean | 否 | 隐藏"编辑此页"入口 |
+
+**不设** `lang` 字段：站点仅提供中文（FR-035），语言由站点级 locale 配置决定，逐篇声明是冗余。
 
 **身份与地址稳定性**：`slug` 由文件名决定，MUST 唯一。文章一旦发布，`slug` MUST NOT 变更；标题与正文修订 MUST NOT 改变地址（FR-015、SC-009）。
 
@@ -83,9 +93,15 @@
 | 字段 | 类型 | 必填 | 校验规则 |
 |---|---|---|---|
 | `title` | string | 是 | 非空 |
-| `route` | string | 是 | 目标路径，如 `/about/`；MUST 唯一且不与文章、项目的路由前缀冲突 |
+| `description` | string | 否 | 分享卡片用 |
+| `ogImage` | string | 否 | 分享卡片封面 |
 
 正文 MUST 包含：个人简介、技能概览、工作经历、联系方式与公开技术账号（FR-003、FR-036）。MUST NOT 包含手机号与简历文件（FR-004）。
+
+**路由由页面文件决定，不由内容声明**（与最初设计不同，已按模板实测结果修正）。模板通过
+`src/pages/about.astro` 渲染 `src/content/pages/about.md`，内容文件没有 `route` 字段。新增一个
+固定页面需要新增一个 `.astro` 文件。这是可接受的：固定页面变更频率极低，且 FR-011 的"不改代码"
+约束只针对**项目与文章**，不包括固定页面。
 
 ---
 
@@ -112,7 +128,7 @@
 
 非独立实体，由 Article 在构建期派生。派生规则：
 
-- 数据源为全部已发布文章，按 `date` 倒序。
+- 数据源为全部已发布文章，按 `pubDatetime` 倒序。
 - MUST 包含标题、摘要、发布日期与正文内容或全文链接。
 - 草稿 MUST NOT 出现。
 
@@ -122,15 +138,30 @@
 
 **职责**：全站单例配置，变更频率最低。
 
+**实现在两个文件中**（模板既有结构，实测确认）：
+
+- `astro-paper.config.ts`（仓库根）—— 站主直接编辑的配置：站点名称、描述、作者、时区、语言、
+  `posts.perPage`、`features.*`（明暗模式、动态分享图、搜索、归档）、社交账号、分享目标。
+- `src/config.ts` —— 内部归一化层，把上面的用户配置收敛为派生默认值后供页面引用。
+
+下表字段落在 `astro-paper.config.ts`。
+
 | 字段 | 类型 | 必填 | 校验规则 |
 |---|---|---|---|
-| `name` | string | 是 | 站点名称 |
-| `owner` | string | 是 | 站主身份标识；MUST 在页面上明确标示（FR-006） |
-| `tagline` | string | 是 | 一句话定位；用于首页首屏（FR-002） |
-| `email` | string | 是 | 公开联系方式（FR-036） |
-| `social` | {label, url}[] | 是 | 公开技术账号，至少 1 项；MUST NOT 包含手机号 |
-| `nav` | {label, href}[] | 是 | 导航结构；MUST 含首页与联系入口（FR-005） |
-| `baseUrl` | url | 是 | 站点根地址；用于订阅源、站点地图与分享元信息 |
+| `site.title` | string | 是 | 站点名称 |
+| `site.description` | string | 是 | 站点描述；用于分享卡片（FR-024） |
+| `site.author` | string | 是 | 站主身份标识；MUST 在页面上明确标示（FR-006） |
+| `site.url` | url | 是 | 站点根地址；用于订阅源、站点地图与分享元信息 |
+| `site.profile` | url | 否 | 站主主页；用于结构化数据 |
+| `site.ogImage` | string | 是 | 默认分享图文件名（置于 `public/`）；无独立封面时使用 |
+| `site.lang` | string | 是 | 固定 `zh`（FR-035） |
+| `site.timezone` | string | 是 | 固定 `Asia/Shanghai`；影响日期显示与定时发布判定 |
+| `socials` | {name, url}[] | 是 | 公开技术账号，至少 1 项；MUST NOT 含手机号（FR-036） |
+| `shareLinks` | {name, url}[] | 是 | 文章页分享目标，精简为中国读者常用的（FR-024） |
+| `posts.perPage` / `posts.perIndex` | number | 是 | 列表分页条数与首页条数 |
+
+**导航结构不在本配置内**：导航项在 `Header.astro`，其文案取自 i18n（`nav.*`）。增加 Projects
+入口需要改这两处，属一次性改动。
 
 ---
 

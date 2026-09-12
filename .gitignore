@@ -20,3 +20,6 @@ Thumbs.db
 
 # Agent 集成产物（由 specify init 生成，可随时重装，不属于本项目内容）
 .dsh/
+
+# 模板验证用的临时工作区（验证结束后删除）
+.verify/

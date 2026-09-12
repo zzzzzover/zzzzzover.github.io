@@ -8,27 +8,33 @@
 
 ## 前置条件
 
-- Node.js 22 LTS
+- Node.js **≥ 22.12.0**（模板 `engines` 要求）
 - 一台已开通的香港/新加坡轻量服务器，Caddy 已安装
 - 一个已解析到该服务器的域名
 - `deploy/` 下的 Caddyfile 与钩子脚本已按 `contracts/site-contract.md` 的发布契约就位
+- **构建不需要外网**：模板原有的 Google Fonts 构建期抓取已移除（见 `verify.md` 第四节）。若构建
+  过程出现任何对外部域名的请求，视为回归缺陷
 
 ## 本地运行
 
 ```bash
 npm install
 npm run dev        # 本地预览，默认 http://localhost:4321
-npm run build      # 生成静态产物到 dist/
+npm run build      # 类型检查 + 生成静态产物到 dist/ + 建立检索索引
 npm run preview    # 以静态方式预览产物，最接近线上行为
 ```
 
-**注意**：站内检索与分享元信息只在 `build` 后存在，验证这两项必须用 `npm run preview`，不能用 `dev`。
+**注意**：
+
+- 站内检索与分享元信息只在 `build` 后存在，验证这两项必须用 `npm run preview`，不能用 `dev`。
+- 若在受限环境中构建报错 `ENOENT: ... mkdir '/home/<user>/.config/astro'`，设置
+  `ASTRO_TELEMETRY_DISABLED=1` 即可，与站点本身无关。
 
 ---
 
 ## V1 — 构建可用性与内容迁移（SC-006）
 
-1. 把一份现有 Markdown 素材原样（仅补 frontmatter）放入 `src/content/articles/`，执行 `npm run build`。
+1. 把一份现有 Markdown 素材原样（仅补 frontmatter）放入 `src/content/posts/`，执行 `npm run build`。
 2. **预期**：构建成功；正文无需改写即完整呈现；代码块、表格、图片均正常显示。
 
 3. 用 3 篇不同来源的素材重复上一步。
