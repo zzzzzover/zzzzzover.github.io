@@ -57,7 +57,7 @@ description: "Task list for 个人作品集与技术博客站点"
 
 **⚠️ CRITICAL**: 本阶段完成前，任何用户故事都无法产出可验收的成果
 
-- [ ] T007 配置站点信息 `astro-paper.config.ts`：`site.url` / `site.title` / `site.description` / `site.author` / `site.profile` / `site.ogImage` / `site.lang: "zh"` / `site.timezone: "Asia/Shanghai"`；`socials` 至少 1 项，且 MUST NOT 含手机号（FR-036）
+- [ ] T007 配置站点基础信息 `astro-paper.config.ts`：`site.url` / `site.title` / `site.description` / `site.author` / `site.profile` / `site.ogImage` / `site.lang: "zh"` / `site.timezone: "Asia/Shanghai"`。（**社交账号与分享目标不在本任务**：前者归 T016，后者归 T034。）
 - [ ] T008 [P] 界面中文化：新增 `src/i18n/lang/zh.ts`（`satisfies UIStrings`，覆盖 `nav`/`post`/`pagination`/`home`/`footer`/`pages`/`a11y`/`notFound` 全部键，类型定义见 `src/i18n/types.ts`），并在 `astro.config.ts` 设 `i18n.locales: ["zh"]`、`defaultLocale: "zh"`（FR-035）
 - [ ] T009 [P] 扩展内容 schema `src/content.config.ts`：新增 `projects` 集合，字段 `title`/`summary`/`role`/`tech`/`status`/`repo`/`demo`/`demoNote`/`cover`/`featured`/`order`；其中 `status` 枚举 MUST 为 `运行中` / `维护中` / `已归档` / `原型`，`tech` MUST 至少 1 项，`repo`/`demo`/`cover` 可选
 - [ ] T010 [P] 新增共享组件 `src/components/ProjectCard.astro`：props 对齐 `projects` schema；展示名称、一句话说明、技术要点、状态；`cover` 缺省时用默认样式，MUST NOT 出现破图；卡片链接指向 `/projects/<slug>/`
@@ -76,8 +76,8 @@ description: "Task list for 个人作品集与技术博客站点"
 
 **Independent Test**: 只实现本阶段并发布，让一个不了解站主的人打开首页，检验他能否说出站主身份、技术方向与联系方式（`quickstart.md` V3）
 
-- [ ] T015 [US1] 重写首页 hero 区 `src/pages/index.astro`：用 `SiteConfig` 替换模板硬编码的 `Mingalaba` 与 AstroPaper 介绍文案；首屏（无需滚动）MUST 可见站主身份、主要技术方向与至少一种联系方式（FR-002）（FR-001、FR-006、SC-001）
-- [ ] T016 [P] [US1] 新增 `src/components/ContactLinks.astro`：渲染邮箱与公开技术账号；MUST NOT 输出手机号与简历下载入口（FR-004、FR-036）（FR-005）
+- [ ] T015 [US1] 重写首页 hero 区 `src/pages/index.astro`：用站点配置替换模板硬编码的 `Mingalaba` 与 AstroPaper 介绍文案；联系方式**复用模板既有 `src/components/Socials.astro`，MUST NOT 新建组件**；首屏（无需滚动）MUST 可见站主身份、主要技术方向与至少一种联系方式（FR-001、FR-002、FR-006、SC-001）
+- [ ] T016 [P] [US1] 全站联系方式入口核对：在 `astro-paper.config.ts` 配置 `socials`（至少 1 项，含邮箱对应的 `mail` 条目）；确认模板既有的 `src/components/Footer.astro` + `src/components/Socials.astro` **已在每一页**提供返回首页与联系站主的入口，并据此满足 FR-005——**MUST NOT 另建 `ContactLinks` 之类的重复组件**（宪法 I）；MUST NOT 输出手机号与简历下载入口（FR-004、FR-005、FR-036）
 - [ ] T017 [US1] 首页新增精选项目区 `src/pages/index.astro`：渲染 `featured: true` 的项目，复用 `ProjectCard`；无精选项目时该区域 MUST 不出现且不留空位
 - [ ] T018 [US1] 编写 `src/content/pages/about.md`：个人简介、技能概览、工作经历、联系方式与公开技术账号；MUST NOT 含手机号与简历文件（FR-003、FR-004）
 - [ ] T019 [US1] 首页最新文章区中文化 `src/pages/index.astro`：文案取自 zh 翻译，条数由 `posts.perIndex` 控制，链接指向 `/posts/`（FR-001）
@@ -94,10 +94,10 @@ description: "Task list for 个人作品集与技术博客站点"
 
 - [ ] T020 [US2] 新增 `src/layouts/ProjectLayout.astro`：承载六段式正文——要解决的问题 / 方案概述 / 关键技术取舍 / 架构或流程图 / 运行截图 / 结果与现状（FR-008）
 - [ ] T021 [US2] 新增项目列表 `src/pages/projects/index.astro`：展示每个项目的名称、一句话说明、技术要点与状态（FR-007），复用 `ProjectCard`（SC-002）
-- [ ] T022 [US2] 新增项目详情 `src/pages/projects/[...slug].astro`：地址稳定为 `/projects/<slug>/`；`repo` 缺省时源码入口 MUST 呈现为不可用状态而非失效链接（FR-009）；`demo` 缺省时 MUST 完全不渲染演示区域（FR-010）
+- [ ] T022 [US2] 新增项目详情 `src/pages/projects/[slug].astro`（**扁平集合用单段参数，不用 `[...slug]`**——`[...slug]` 会额外匹配 `/projects/a/b/` 这类不存在的多级路径）：地址稳定为 `/projects/<slug>/`；`repo` 缺省时源码入口 MUST 呈现为不可用状态而非失效链接（FR-009）；`demo` 缺省时 MUST 完全不渲染演示区域（FR-010）
 - [ ] T023 [P] [US2] 编写首个项目 `src/content/projects/bili-dynamics.md`：六段式正文 + 架构图 + 运行截图；截图与正文 MUST 通过人工核对，不得出现 `.env`/`config.json` 中的凭证或账号信息（FR-032）
 - [ ] T024 [P] [US2] 编写第二个项目 `src/content/projects/tech-feed.md`：同上六段式要求（SC-005）
-- [ ] T025 [US2] 项目详情响应式核对 `src/pages/projects/[...slug].astro` 与 `src/layouts/ProjectLayout.astro`：宽表格、长代码行、宽截图 MUST NOT 导致整页横向滚动（FR-026）
+- [ ] T025 [US2] 项目详情响应式核对 `src/pages/projects/[slug].astro` 与 `src/layouts/ProjectLayout.astro`：宽表格、长代码行、宽截图 MUST NOT 导致整页横向滚动（FR-026）
 
 **Checkpoint**: 项目区独立可用，且新增项目不需要改动任何页面代码（FR-011）
 
@@ -158,7 +158,7 @@ description: "Task list for 个人作品集与技术博客站点"
 **Independent Test**: 为一个项目配置演示入口并打开；移除配置后确认页面不出现该区域且不留空位（`quickstart.md` V4 演示部分）
 
 - [ ] T039 [US6] 新增 `src/components/DemoFrame.astro`：嵌入演示并提供全屏打开入口；加载失败或超时 MUST 给出降级提示且 MUST NOT 影响页面其余内容阅读（User Story 6 场景 3）
-- [ ] T040 [US6] 项目详情页接入 `demo` 字段：修改 `src/pages/projects/[...slug].astro`，`demo` 存在时渲染 `DemoFrame`，为外链时按外链方式呈现而不嵌入
+- [ ] T040 [US6] 项目详情页接入 `demo` 字段：修改 `src/pages/projects/[slug].astro`，`demo` 存在时渲染 `DemoFrame`，为外链时按外链方式呈现而不嵌入
 - [ ] T041 [P] [US6] 放置首个真实演示：把 `tech-feed/demo/index.html` 的静态预览产物放入 `public/demos/tech-feed/`，并在 `src/content/projects/tech-feed.md` 填 `demo: /demos/tech-feed/`
 - [ ] T042 [US6] 为 `demo` 字段增加构建期校验（`src/content.config.ts` 或 `scripts/check-links.mjs`）：`demo` 指向的站点内目录不存在时构建 MUST 失败，避免上线死链
 

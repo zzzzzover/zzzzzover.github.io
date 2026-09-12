@@ -82,15 +82,15 @@ personal-blog/
 │   │   ├── PostLayout.astro     【用】文章页
 │   │   └── ProjectLayout.astro  【新】项目页版式（自行控制，不用主题模板）
 │   ├── components/              【用】模板 13 个组件原样保留
+│   │   │                        ↳ 联系方式入口直接复用既有 Socials.astro，MUST NOT 另建组件
 │   │   ├── ProjectCard.astro    【新】
-│   │   ├── DemoFrame.astro      【新】demo 嵌入、全屏入口与加载降级
-│   │   └── ContactLinks.astro   【新】
+│   │   └── DemoFrame.astro      【新】demo 嵌入、全屏入口与加载降级
 │   ├── i18n/lang/zh.ts          【新】界面文案中文化（模板只带 en.ts）
 │   ├── pages/
 │   │   ├── index.astro          【改】hero 换成站主信息 + 新增精选项目区
 │   │   ├── about.astro          【用】
 │   │   ├── projects/index.astro        【新】
-│   │   ├── projects/[...slug].astro    【新】
+│   │   ├── projects/[slug].astro       【新】
 │   │   ├── posts/**             【用】列表、分页、详情、标签、归档
 │   │   ├── search.astro         【用】Pagefind 检索页
 │   │   ├── rss.xml.ts / robots.txt.ts / 404.astro   【用】
