@@ -1,10 +1,14 @@
-# 依赖与构建产物（具体技术栈在方案阶段确定，此处先覆盖常见项）
+# 依赖与构建产物
 node_modules/
 dist/
 build/
 .astro/
 .cache/
+.pnpm-store/
 *.log
+
+# 构建脚本会把 Pagefind 索引写回 public/，属产物而非源码
+public/pagefind/
 
 # 编辑器 / 系统
 .vscode/

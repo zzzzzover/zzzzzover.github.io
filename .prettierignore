@@ -1,0 +1,18 @@
+# 忽略全部，只检查我们真正维护的源码与配置
+/*
+
+!/src
+!/public
+!/scripts
+!/tsconfig.json
+!/astro.config.ts
+!/astro-paper.config.ts
+!/package.json
+!.prettierrc
+!README.md
+
+# 内容由作者手写，不参与格式化
+/src/content
+
+# MDX 不支持
+*.mdx

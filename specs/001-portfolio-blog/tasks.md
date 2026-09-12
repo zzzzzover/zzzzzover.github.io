@@ -38,12 +38,12 @@ description: "Task list for 个人作品集与技术博客站点"
 
 **Purpose**: 把验证过的模板变成项目本体，清掉不属于本项目的东西
 
-- [ ] T001 把模板源码落地到仓库根：从 `.verify/astro-paper/` 复制全部源码到 `personal-blog/`，排除 `node_modules/`、`.git/`、`.github/`、`Dockerfile`、`compose.yaml`、`.vscode/`、`eslint.config.js`、`cz.yaml`；不得覆盖本项目已有的 `.git/`、`.specify/`、`specs/`、`.gitignore`
-- [ ] T002 安装依赖并确认构建通过：在仓库根执行 `pnpm install` 后执行 `pnpm build`（脚本定义于 `package.json`），预期 45 个页面构建成功（Node.js MUST ≥ 22.12.0）
-- [ ] T003 [P] 清除模板演示内容：删除 `src/content/posts/` 下的演示文章及 `_color-schemes/`、`_releases/`、`examples/` 目录与全部配图（约 5.4 MB），同时删除 `src/assets/images/` 下的演示图
-- [ ] T004 [P] 更新根 `.gitignore`：追加 `public/pagefind/`、`dist/`、`.astro/`、`node_modules/`（模板 `build` 脚本会把 Pagefind 索引写回 `public/`）
-- [ ] T005 字体处理（两部分，缺一不可）：**① 核对构建期外部依赖已移除**——源副本 `.verify/astro-paper` **已应用**这些改动，故此处是逐项核对而非重做：确认 `astro.config.ts` 无 `fonts` 块、`src/layouts/Layout.astro` 无 `<Font>`、`src/styles/theme.css` 的 `--font-app` 为系统字体栈（含 PingFang SC / Microsoft YaHei / Noto Sans CJK SC）。**② 生成分享图子集字体**（开发期工具，不进构建）——新增 `scripts/build-og-font.mjs`，用 `subset-font` 从 Noto Sans SC 生成**静态实例**（必须带 `variationAxes: { wght: 400 }`，否则 satori 因可变字体崩溃），覆盖站点信息 + 全部内容标题与描述 + 3000 常用汉字；用 `fontkit` 回读字体生成字符覆盖清单；产出 `src/assets/fonts/og-subset.ttf`（约 821 KB）与 `src/assets/fonts/og-subset.coverage.json`，二者**提交进仓库**。配方见 `.verify/astro-paper/og3.mjs` 与 `research.md` D8。**动态分享图不在此关闭**，见 T014
-- [ ] T006 [P] 整理 `package.json`：修改 `name`，确认 `build` 脚本仍为 `astro check && astro build && pagefind --site dist`，移除不适用的 lint/format 脚本（保留 `prettier` 相关）
+- [X] T001 把模板源码落地到仓库根：从 `.verify/astro-paper/` 复制全部源码到 `personal-blog/`，排除 `node_modules/`、`.git/`、`.github/`、`Dockerfile`、`compose.yaml`、`.vscode/`、`eslint.config.js`、`cz.yaml`；不得覆盖本项目已有的 `.git/`、`.specify/`、`specs/`、`.gitignore`
+- [X] T002 安装依赖并确认构建通过：在仓库根执行 `pnpm install` 后执行 `pnpm build`（脚本定义于 `package.json`），预期 45 个页面构建成功（Node.js MUST ≥ 22.12.0）
+- [X] T003 [P] 清除模板演示内容：删除 `src/content/posts/` 下的演示文章及 `_color-schemes/`、`_releases/`、`examples/` 目录与全部配图（约 5.4 MB），同时删除 `src/assets/images/` 下的演示图。**实测坑**：删完必须清 `node_modules/.astro`（Astro 的内容缓存默认在这里，只删 `.astro` 不够），否则构建仍会引用已删除的图片而报 `ImageNotFound`
+- [X] T004 [P] 更新根 `.gitignore`：追加 `public/pagefind/`、`dist/`、`.astro/`、`node_modules/`（模板 `build` 脚本会把 Pagefind 索引写回 `public/`）
+- [X] T005 字体处理（两部分，缺一不可）：**① 核对构建期外部依赖已移除**——源副本 `.verify/astro-paper` **已应用**这些改动，故此处是逐项核对而非重做：确认 `astro.config.ts` 无 `fonts` 块、`src/layouts/Layout.astro` 无 `<Font>`、`src/styles/theme.css` 的 `--font-app` 为系统字体栈（含 PingFang SC / Microsoft YaHei / Noto Sans CJK SC）。**② 生成分享图子集字体**（开发期工具，不进构建）——新增 `scripts/build-og-font.mjs`，用 `subset-font` 从 Noto Sans SC 生成**静态实例**（必须带 `variationAxes: { wght: 400 }`，否则 satori 因可变字体崩溃），覆盖站点信息 + 全部内容标题与描述 + 3000 常用汉字；用 `fontkit` 回读字体生成字符覆盖清单；产出 `src/assets/fonts/og-subset.ttf`（约 821 KB）与 `src/assets/fonts/og-subset.coverage.json`，二者**提交进仓库**。配方见 `.verify/astro-paper/og3.mjs` 与 `research.md` D8。**动态分享图不在此关闭**，见 T014
+- [X] T006 [P] 整理 `package.json`：修改 `name`，确认 `build` 脚本仍为 `astro check && astro build && pagefind --site dist`，移除不适用的 lint/format 脚本（保留 `prettier` 相关）
 
 **Checkpoint**: `pnpm build` 在无外网构建环境下通过
 
