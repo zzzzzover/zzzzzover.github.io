@@ -42,7 +42,7 @@
 | `/sitemap-index.xml` | 200 |
 | `/robots.txt` | 200 |
 | `/posts/<slug>/` | 200 |
-| `/og.png` | **404（预期）**，见下文第四节 |
+| `/og.png` | 200（初版验证时为 404——当时动态分享图被关闭；方案修订后恢复） |
 
 ## 四、发现的阻碍性问题与修复
 
@@ -69,21 +69,41 @@ from https://fonts.gstatic.com/...  Caused by: fetch failed
 | `astro.config.ts` | 删除整个 `fonts: [...]` 配置块 |
 | `src/styles/theme.css` | `--font-app` 由 `var(--font-google-sans-code)` 改为系统字体栈（含 PingFang SC / Microsoft YaHei / Noto Sans CJK SC） |
 | `src/layouts/Layout.astro` | 移除 `import { Font }` 与 `<Font />` 元素 |
-| `astro-paper.config.ts` | `features.dynamicOgImage` 改为 `false` |
-| `src/pages/og.png.ts` | 删除（该路由不检查开关，缺字体会直接抛错） |
+| `astro-paper.config.ts` | `features.dynamicOgImage` 改为 `false` ⚠️ |
+| `src/pages/og.png.ts` | 删除 ⚠️ |
+
+> ⚠️ 后两行是**初版**处置，已在方案修订中撤销：动态分享图保留，改用仓库内的中文子集字体。
+> 详见本节 4.2 与 `research.md` D8。
 
 **副作用（需知悉）**：原字体是**全站正文字体**（`--font-app`），不只是代码字体。移除后全站改用
 系统字体栈。对中文内容而言观感通常更好，但**站点外观与模板演示站会有差异**，这是有意的取舍。
 
-### 4.2 中文动态分享图不可用（已接受降级）
+### 4.2 中文动态分享图：初版判断已被实测推翻
 
-模板用 **satori** 为每篇文章生成分享卡片，satori 需要**真实字体数据**才能渲染文字。中文字体动辄
-5–20 MB，塞进构建产物不现实；且模板依赖的是 Astro 的实验性 API `experimental_getFontFileURL`。
+**初版结论（已撤销）**：曾判定中文动态分享图不可行并关闭 `dynamicOgImage`，理由是"satori 需要真实
+字体数据，中文字体 5–20 MB 不适合进构建产物"。
 
-**处置**：关闭 `dynamicOgImage`。模板有优雅降级——自动回退到 `public/{site.ogImage}` 静态默认图，
-**满足 FR-024**（分享卡片有标题、摘要、封面）。
+**实测推翻了该判断。** 用 `subset-font`（harfbuzz wasm）从 Noto Sans SC 生成子集后：
 
-**代价**：所有文章共用一张默认分享图，没有逐篇独立卡片。若将来需要，可自行以字体子集化方式补回。
+| 实测项 | 结果 |
+|---|---|
+| 子集字体（仅一张卡片实际用字） | 33 KB |
+| 子集字体（+3000 常用汉字） | **821 KB** |
+| satori 渲染单张 1200×630 | 22–45 ms |
+| sharp 转 PNG | 26–225 ms |
+| 输出 PNG | 57 KB |
+| **渲染内存增量** | **+9 MB（33KB 字体）／+11 MB（821KB 字体）** |
+
+中文渲染结果已人工目视确认：标题、正文、中英混排与标点全部正确。
+
+**结论**：字体体积对内存几乎无影响（基线 211 MB 来自 Node + sharp 自身）。**动态分享图保留**，
+字体改为随仓库提交的子集文件，构建期从本地读取，**仍然零外部网络请求**。因此上表中
+`astro-paper.config.ts` 与 `src/pages/og.png.ts` 两行的处置已被修订，见 `research.md` D8。
+
+**实测撞到的三个坑**：satori 不读 `.ttc` 集合；不读可变字体（`parseFvarAxis` 崩溃）；
+**缺字静默留空白且不报错**——因此必须有构建期字符覆盖检查。
+
+**代价**：仓库多约 821 KB；内容引入生僻字时需重跑生成脚本（覆盖检查会明确报出是哪个字）。
 
 ## 五、中文支持验证（通过）
 
@@ -148,7 +168,7 @@ Pagefind 提示 "doesn't support stemming for the language zh"——中文不需
 模板**可用**，且中文化与性能表现良好。但**不能开箱即用**：
 
 1. 必须先移除 Google Fonts 构建期依赖，否则发布流程会随机失败（已验证修复有效）。
-2. 必须接受"无逐篇动态分享图"这一降级。
+2. 动态分享图需要自带中文字体子集，并配一个构建期字符覆盖检查——因为缺字是静默失败。
 3. 首页与项目区需要自行实现，这部分模板不提供。
 
 以上三项已分别反映到 `research.md`、`plan.md`、`data-model.md` 与 `contracts/` 的修订中。

@@ -24,6 +24,9 @@ description: "Task list for 个人作品集与技术博客站点"
   实测结论见 `verify.md`。**不要重新踩一遍 Google Fonts 那个坑。**
 - 宪法三条：简约优先 / 内容与渲染分离 / 无运行时依赖。新增依赖必须先回答"删掉它会损失什么"。
 - **构建期不得有任何外网请求**，这是实测得出的硬约束。
+- **动态分享图保留**，字体是仓库内的中文子集文件。`research.md` D8 记录了三个必须绕开的坑：
+  satori 不读 `.ttc` 集合、不读可变字体、**缺字静默留空白且不报错**。`.verify/astro-paper/og3.mjs`
+  是可用的生成配方（含 `variationAxes: { wght: 400 }` 这一步）。
 
 ## Path Conventions
 
@@ -39,7 +42,7 @@ description: "Task list for 个人作品集与技术博客站点"
 - [ ] T002 安装依赖并确认构建通过：在仓库根执行 `pnpm install` 后执行 `pnpm build`（脚本定义于 `package.json`），预期 45 个页面构建成功（Node.js MUST ≥ 22.12.0）
 - [ ] T003 [P] 清除模板演示内容：删除 `src/content/posts/` 下的演示文章及 `_color-schemes/`、`_releases/`、`examples/` 目录与全部配图（约 5.4 MB），同时删除 `src/assets/images/` 下的演示图
 - [ ] T004 [P] 更新根 `.gitignore`：追加 `public/pagefind/`、`dist/`、`.astro/`、`node_modules/`（模板 `build` 脚本会把 Pagefind 索引写回 `public/`）
-- [ ] T005 应用已验证的构建期依赖修复（5 处改动，缺一不可）：`astro.config.ts` 删除整个 `fonts` 配置块；`src/layouts/Layout.astro` 移除 `import { Font }` 与 `<Font />` 元素；`src/styles/theme.css` 把 `--font-app` 改为系统字体栈（含 PingFang SC / Microsoft YaHei / Noto Sans CJK SC）；`astro-paper.config.ts` 设 `features.dynamicOgImage: false`；删除 `src/pages/og.png.ts`
+- [ ] T005 字体处理（两部分，缺一不可）：**① 移除构建期外部依赖**——`astro.config.ts` 删除整个 `fonts` 配置块；`src/layouts/Layout.astro` 移除 `import { Font }` 与 `<Font />`；`src/styles/theme.css` 把 `--font-app` 改为系统字体栈（含 PingFang SC / Microsoft YaHei / Noto Sans CJK SC）。**② 生成分享图子集字体**（开发期工具，不进构建）——新增 `scripts/build-og-font.mjs`，用 `subset-font` 从 Noto Sans SC 生成**静态实例**（必须带 `variationAxes: { wght: 400 }`，否则 satori 因可变字体崩溃），覆盖站点信息 + 全部内容标题与描述 + 3000 常用汉字；用 `fontkit` 回读字体生成字符覆盖清单；产出 `src/assets/fonts/og-subset.ttf`（约 821 KB）与 `src/assets/fonts/og-subset.coverage.json`，二者**提交进仓库**。配方见 `.verify/astro-paper/og3.mjs` 与 `research.md` D8。**动态分享图不在此关闭**，见 T014
 - [ ] T006 [P] 整理 `package.json`：修改 `name`，确认 `build` 脚本仍为 `astro check && astro build && pagefind --site dist`，移除不适用的 lint/format 脚本（保留 `prettier` 相关）
 
 **Checkpoint**: `pnpm build` 在无外网构建环境下通过
@@ -59,9 +62,9 @@ description: "Task list for 个人作品集与技术博客站点"
 - [ ] T009 [P] 扩展内容 schema `src/content.config.ts`：新增 `projects` 集合，字段 `title`/`summary`/`role`/`tech`/`status`/`repo`/`demo`/`demoNote`/`cover`/`featured`/`order`；其中 `status` 枚举 MUST 为 `运行中` / `维护中` / `已归档` / `原型`，`tech` MUST 至少 1 项，`repo`/`demo`/`cover` 可选
 - [ ] T010 [P] 新增共享组件 `src/components/ProjectCard.astro`：props 对齐 `projects` schema；展示名称、一句话说明、技术要点、状态；`cover` 缺省时用默认样式，MUST NOT 出现破图；卡片链接指向 `/projects/<slug>/`
 - [ ] T011 建立部署通道：`deploy/Caddyfile`（静态服务 + 自动 HTTPS）、`deploy/post-receive`（拉取 → 安装 → 构建 → 预算与链接检查 → **原子切换发布目录** → 保留回滚点）、`deploy/README.md`。流水线 MUST 满足 `contracts/site-contract.md` 第 4 节：任一步失败 MUST 中止且 MUST NOT 切换服务目录
-- [ ] T012 [P] 新增校验脚本 `scripts/check-links.mjs`（构建产物内部链接与资源可达性）与 `scripts/check-budget.mjs`（首屏 JS ≤50 KB gzip、静态资源 ≤1 MB、单篇媒体 ≤5 MB）
+- [ ] T012 [P] 新增校验脚本：`scripts/check-links.mjs`（构建产物内部链接与资源可达性）、`scripts/check-budget.mjs`（首屏 JS ≤50 KB gzip、静态资源 ≤1 MB、单篇媒体 ≤5 MB）、`scripts/check-og-font.mjs`（**构建期字符覆盖检查**：扫描全部内容与站点信息，凡有字符不在 `og-subset.coverage.json` 中即构建失败，并报出具体字符与来源文件。零构建期依赖，只读清单）
 - [ ] T013 导航增加 Projects 入口：修改 `src/components/Header.astro`，并在 T008 的 zh 文案中补对应键（FR-005）
-- [ ] T014 [P] 替换默认分享图 `public/default-og.jpg` 为本项目版本（关闭动态分享图后所有页面共用此图）
+- [ ] T014 恢复动态分享图并使用本地子集字体：`astro-paper.config.ts` 设 `features.dynamicOgImage: true`；重写 `src/pages/og.png.ts`（全站默认图）与 `src/pages/posts/[...slug]/index.png.ts`（逐篇图），**不再使用 Astro 的 `fontData` / `experimental_getFontFileURL`**，改为直接读取 `src/assets/fonts/og-subset.ttf` 传给 satori；把 `check-og-font` 接入 `package.json` 的 `build` 脚本；同时替换 `public/default-og.jpg` 为本项目默认图（无独立封面时的回退）（FR-024）
 
 **Checkpoint**: 站点可构建、可中文化、项目集合 schema 就绪、部署通道可执行
 
@@ -139,7 +142,7 @@ description: "Task list for 个人作品集与技术博客站点"
 **Independent Test**: 订阅订阅源并发布新文章，检验阅读器是否收到；用搜索引擎检索标题；用中文关键词做站内检索（`quickstart.md` V5、V7）
 
 - [ ] T034 [P] [US5] 分享目标精简：修改 `astro-paper.config.ts` 的 `shareLinks` 与 `src/pages/posts/[...slug]/_components/ShareLinks.astro`，替换模板默认的 whatsapp / facebook / x / telegram / pinterest 为中国读者常用形式（微信、邮箱、复制链接）
-- [ ] T035 [P] [US5] 分享元信息核对：确认每个页面输出 title / description / canonical 与 OG 卡片信息，无独立封面时使用 `site.ogImage` 默认图，MUST NOT 出现破图（FR-024）（SC-007）
+- [ ] T035 [P] [US5] 分享元信息核对：确认每个页面输出 title / description / canonical 与 OG 卡片信息；确认**每篇文章生成独立的分享卡片**（内容为该文章的标题与摘要，非全站共用图），无独立封面时回退到 `site.ogImage` 默认图且 MUST NOT 出现破图（FR-024）（SC-007）
 - [ ] T036 [P] [US5] 订阅源与站点地图核对：`src/pages/rss.xml.ts` 与 `@astrojs/sitemap` 输出正确；中文标题正常；草稿 MUST NOT 出现（FR-020、FR-022、FR-023）（SC-010）
 - [ ] T037 [US5] 站内检索中文查询实测 `src/pages/search.astro`：在 `pnpm preview` 下用**正文中出现但标题里没有的中文关键词**检索，确认命中；再输入不存在的关键词，确认有明确空结果提示（FR-025、SC-011）。此项**此前未验证**，见 `verify.md` 第八节
 - [ ] T038 [US5] 核对 `src/pages/robots.txt.ts` 与搜索引擎收录前置条件（站点地图可达、canonical 正确）

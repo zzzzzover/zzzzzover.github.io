@@ -161,7 +161,7 @@ export default defineAstroPaperConfig({
   posts: { perPage: 8, perIndex: 4, scheduledPostMargin: 15 * 60 * 1000 },
   features: {
     lightAndDarkMode: true,
-    dynamicOgImage: false,     // 必须 false，原因见 ../verify.md
+    dynamicOgImage: true,      // 保留动态分享图；字体取自仓库内子集文件，见 ../research.md D8
     showArchives: true,
     showBackButton: true,
     editPost: { enabled: false },
