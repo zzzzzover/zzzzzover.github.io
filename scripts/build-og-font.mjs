@@ -74,6 +74,17 @@ async function main() {
   const all = new Set();
   for (const [a, b] of FIXED_RANGES) for (let c = a; c <= b; c++) all.add(c);
 
+  // 内容里实际用到的字符必须进入子集。常用汉字表只是「提前量」——它让新增文章
+  // 通常不必重跑字体生成；但它不构成保证（如「耦」不在 3500 一级字表内）。
+  // 少了这一句，超出字表的内容字符会直到 check-og-font.mjs 才暴露，而不是被自动覆盖。
+  let scopedAdded = 0;
+  for (const cp of scoped) {
+    if (!all.has(cp)) {
+      all.add(cp);
+      scopedAdded++;
+    }
+  }
+
   const commonHanzi = readFileSync(COMMON_HANZI_FILE, "utf8");
   let hanziCount = 0;
   for (const ch of commonHanzi) {
@@ -86,7 +97,7 @@ async function main() {
 
   console.log(`扫描 ${fileCount} 个文件的 frontmatter 与站点配置，得到 ${scoped.size} 个内容字符`);
   for (const s of sources) console.log(`  ${s.file}  +${s.count}`);
-  console.log(`常用汉字表 ${hanziCount} 字 + 固定标点范围，合计需覆盖 ${all.size} 个码位`);
+  console.log(`常用汉字表 ${hanziCount} 字 + 固定标点范围 + 内容独有 ${scopedAdded} 字，合计需覆盖 ${all.size} 个码位`);
 
   // 2. 子集化。variationAxes 是关键：不做这一步输出仍是可变字体，satori 会崩
   const subset = await subsetFont(source, String.fromCodePoint(...[...all].sort((a, b) => a - b)), {

@@ -33,7 +33,9 @@ const datetime = dayjs(isModified ? modDatetime : pubDatetime).tz(
   postTimezone ?? config.site.timezone
 );
 
-const date = datetime.format("D MMM, YYYY");
+// 站点仅提供中文（FR-035），日期格式固定为中文写法，不走 dayjs 的英文 locale。
+// 年/月/日为 CJK 字符，不是 dayjs 的格式 token，会原样输出。
+const date = datetime.format("YYYY 年 M 月 D 日");
 ---
 
 <div

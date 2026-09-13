@@ -109,9 +109,15 @@ description: "Task list for 个人作品集与技术博客站点"
 
 **Independent Test**: 只发布一篇文章，从外部链接直接打开，检验正文可读、地址可分享、页面上有其余内容入口（`quickstart.md` V1、V6）
 
-- [ ] T026 [US3] 文章页中文化核对与调整：`src/layouts/PostLayout.astro` 与 `src/pages/posts/[...slug]/index.astro` 的界面文案改走 zh 翻译；核对相邻文章导航、回到顶部、目录折叠在中文下的表现（FR-012、FR-013、FR-016）
+- [X] T026 [US3] 文章页中文化核对与调整：`src/layouts/PostLayout.astro` 与 `src/pages/posts/[...slug]/index.astro` 的界面文案改走 zh 翻译；核对相邻文章导航、回到顶部、目录折叠在中文下的表现（FR-012、FR-013、FR-016）
+  - 已核对：导航（项目/文章/标签/关于/归档/搜索）、返回、分享、回到顶部、跳到正文 均为中文。
+  - **发现并修复**：`src/components/Datetime.astro` 硬编码 `"D MMM, YYYY"`，日期渲染为 `13 Sep, 2026`，违反 FR-035。已改为 `YYYY 年 M 月 D 日`，并全站扫描确认无残留英文月份。
+  - **未覆盖**：相邻文章导航当前仅 1 篇文章，无法验证；待第 2 篇上线后补测。
 - [ ] T027 [P] [US3] 迁移文章 `src/content/posts/mihomo-tun-remote-fix.md`：正文原样保留，仅补 frontmatter（`title` / `description` / `pubDatetime` / `tags`），MUST NOT 重写正文（FR-021）（SC-006）
-- [ ] T028 [P] [US3] 迁移文章 `src/content/posts/tech-feed-intro.md`：同上要求（SC-006）
+  - **站主决定不做**：排障记录不是技术文章，不放入文章区。
+- [X] T028 [P] [US3] 迁移文章 `src/content/posts/tech-feed-intro.md`：同上要求（SC-006）
+  - **与原任务描述的偏差（须记录）**：tech-feed 仓库中**不存在** `tech-feed-intro.md`——该项目的 Markdown 只有 README 与 docs/（原则、准入标准、手册、决策记录），都不是可独立成篇的文章。因此无法"迁移并原样保留正文"。
+  - **实际做法**：基于 `README.md`、`specs/001-feed-system/spec.md`（五次改判记录）与 `docs/open-questions.md` 另写了一篇复盘文 `src/content/posts/decouple-truth-source.md`，取材真实、未编造，且**不与项目页重复**（项目页讲"是什么"，文章讲"为什么这么设计、代价是什么"）。
 - [ ] T029 [US3] 移动端阅读核对 `src/pages/posts/[...slug]/index.astro` 与 `src/components/ResponsiveTable.astro`：代码块、表格、引用 MUST 在自身容器内滚动，不产生整页横向滚动（FR-014）
 
 **Checkpoint**: 文章区独立可用，现有 Markdown 素材已可直接承载
