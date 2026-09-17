@@ -10,12 +10,12 @@ export default defineAstroPaperConfig({
     // 【待填】域名购买并解析后替换，必须以 / 结尾。
     // 支持用 SITE_URL 覆盖，便于同一份代码部署到不同托管（见 deploy/README.md）。
     url: process.env.SITE_URL || "https://example.com/",
-    // 【待填】站点名称
-    title: "站点名称待填",
-    // 【待填】站点描述，会出现在分享卡片上
-    description: "站点描述待填。",
-    // 【待填】站主姓名或稳定使用的标识
-    author: "站主待填",
+    // 站点名称
+    title: "漫宿",
+    // 站点描述，会出现在分享卡片上
+    description: "漫宿的博客：后端工程、AI 交付与踩坑复盘。",
+    // 站主姓名或稳定使用的标识
+    author: "漫宿",
     // 【待填】可选：个人主页
     // profile: "https://example.com",
     ogImage: "default-og.jpg",
@@ -39,13 +39,15 @@ export default defineAstroPaperConfig({
     editPost: { enabled: false },
     search: "pagefind",
   },
-  // 【待填】公开联系方式与公开技术账号；至少 1 项，MUST NOT 含手机号（FR-036）
+  // 公开联系方式与公开技术账号；至少 1 项，MUST NOT 含手机号（FR-036）
   socials: [
-    { name: "github", url: "https://github.com/username" },
-    { name: "mail", url: "mailto:you@example.com" },
+    { name: "github", url: "https://github.com/zzzzzover" },
+    { name: "mail", url: "mailto:jwx1362258929@126.com" },
   ],
   // 已完成精简：模板默认的 whatsapp / facebook / x / telegram / pinterest
   // 对中文读者基本无用，只保留邮件。
   // 待 T034 增补「复制链接」，以及微信（需新增图标资源，模板未提供）。
-  shareLinks: [{ name: "mail", url: "mailto:?subject=See%20this%20post&body=" }],
+  shareLinks: [
+    { name: "mail", url: "mailto:?subject=See%20this%20post&body=" },
+  ],
 });
